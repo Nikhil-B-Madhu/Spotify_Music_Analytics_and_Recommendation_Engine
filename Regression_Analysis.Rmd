@@ -1,0 +1,111 @@
+---
+title: "Regression Analysis"
+date: "2022-11-25"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(warning = FALSE, message = FALSE) 
+```
+
+
+```{r}
+#Libraries used
+library(tidyverse)
+library(janitor)
+library(dplyr)
+library(readr)
+library(ggplot2)
+library(hrbrthemes)
+library(dplyr)
+library(tidyr)
+library(viridis)
+library(visreg)
+library(psych)
+library(DAAG)
+library(highcharter)
+library(knitr)
+library(kableExtra)
+library(DT)
+library(tm)
+library(corrplot)
+library(leaps)
+```
+
+
+Reading the data from .csv file
+```{r question-1-response, echo=FALSE,  results='hide'}
+df <- read_csv("D:/MS_in_DS/Stats_1/Assignments/Assignment_1/Nikhil_Madhu_Belavinakodige_Stats_Assignment_1/Stats_Assignment_1_Cleaned.csv")
+head(df)
+
+```
+
+Initial Model
+Creating a multiple linear regression model with rating value as the response variable and danceability, energy, key, loudness, mode, speechiness, acousticness, instrumentalness, liveness, valence, tempo and duration_ms as the covariates.
+
+```{r}
+model_1 <- lm(rating_percent ~ danceability + energy +key + loudness + mode + speechiness + acousticness + instrumentalness + liveness + valence + tempo + duration_ms, 
+              data = df)
+
+summary(model_1)
+```
+
+It can be noticed that all the covariates in the model are significant expect key since the p-value for each of them is less than 0.054``. Besides, the Adjusted R- squared values is  0.002421 which is moderate. p-value of the model is < 2.2e-16 suggesting all the results are significant. However, We are performing variable selection process to identify the significant covariates.
+
+Variable selection
+```{r}
+model_3 = regsubsets(rating_percent ~ danceability + energy + key + loudness + mode + speechiness + acousticness + instrumentalness + liveness + valence + tempo + duration_ms, 
+             data = df,
+             nbest = 8)
+
+plot(model_3, scale = "bic")
+```
+
+According to best subset selection, the influence of ‘Energy’ > ‘Loudness’. Upon comparing both these results we can arrive at the conclusion that all variables except ‘key’ are statiscally significant in predicting the track popularity. Also the p value for the column 'key' is greater than 0.05. 
+
+```{r}
+model_2 <- lm(rating_percent ~ danceability + energy + loudness + mode + speechiness + acousticness + instrumentalness + liveness + valence + tempo + duration_ms, 
+             data = df)
+
+summary(model_2)
+```
+
+
+```{r}
+par(mfrow = c(1,2))
+# generate QQ plot
+qqnorm(model_2$residuals,main = "Model")
+qqline(model_2$residuals)
+
+# generate Scatter Plot
+plot(model_2$fitted.values,model_2$residuals,pch = 20, main = "Residuals vs fitted values")
+abline(h = 0,col = "grey") 
+```
+From the graphs, we observe that the qq plot is not ideal and the data in the scatterplot is not evenly distributed. Therefore, this dataset doesn’t completely satisfy the normality, linearity and equal variance assumptions.
+
+Now we use the model created to make predictions about the track popularity.
+```{r}
+new_popularity <- data.frame(danceability = 0.718,
+                             energy = 0.93,
+                             loudness = -3.778,
+                             mode = 1,
+                             speechiness = 0.102,
+                             acousticness = 0.0287,
+                             instrumentalness = 0,
+                             liveness = 0.204,
+                             valence = 0.277,
+                             tempo = 121.956,
+                             duration_ms = 169093)
+
+print(paste0("Observed popularity: ",60))
+```
+
+
+```{r}
+
+predicted <- predict(model_2, newdata = new_popularity)
+print(paste0("Predicted popularity: ",(predicted)))
+```
+
+We observe the values we get for popularity is less then the observed values. The variation exists because of skewness in the data. The model needs to transformed to make accurate predictions about the popularity

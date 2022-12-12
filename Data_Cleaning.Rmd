@@ -1,0 +1,240 @@
+---
+title: "Cleaning Data"
+author: "Team 7"
+date: "2022-09-02"
+output: pdf_document
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(warning = FALSE, message = FALSE) 
+```
+
+
+```{r}
+#Libraries used
+library(tidyverse)
+library(janitor)
+library(dplyr)
+```
+
+Reading the data from .csv file
+```{r}
+df <- read_csv("D:/MS_in_DS/Stats_1/Assignments/Assignment_1/Nikhil_BM_Stats_Assignment1/Stats_Assignment_1_Dirty.csv")
+```
+Displaying the data
+```{r}
+df
+```
+We noticed that the column names are not in correct format.
+Renaming the columns using function clean_name from janitor package
+
+```{r}
+df <- 
+df %>%
+  clean_names()
+```
+
+```{r}
+colnames(df)
+```
+In this data song_id will work as Primary key if required so sr_no is not required
+
+Removing unnecessary columns from the data 
+```{r}
+df = subset(df, select = -sr_no )
+col_names <- colnames(df)
+```
+
+Checking for NULL values in all columns
+```{r}
+df %>% summarise(across(everything(), ~ sum(is.na(.))))
+```
+From the above table we can infer that columns like song_name,
+track_number, explicit, danceability are not dependent on any other column also replacing danceability with it's mean might not give desired results hence it is safer to remove them
+
+But artist_name might be dependent on artist_id
+Also we can substitute disc_number with the most frequent disc number
+
+Substituting artist name on basis of artist_id
+Creating a new table just for artist_id and artist name
+
+```{r}
+df1 <- df[c("artist","artist_id")]
+#Removing redundancy
+df1 <- unique(df1)
+#Deleting all rows that contain NA
+df1 <- na.omit(df1)
+df1
+```
+Joining the 2 data frames based on artist_id
+```{r}
+df <- 
+df %>%
+  left_join(df1,by = "artist_id")
+
+#Removing artist_x
+df <-  subset(df, select = -artist.x )
+#Renaming artist.y to artist
+df <- rename(df, artist = artist.y)
+
+#Changing the sequence of columns
+df <- df %>% select(song_id:album_id,'artist',everything())
+```
+```{r}
+df
+```
+
+We also see that,Disc Number column has NA. 
+So replacing NA with Mode in case of disc_number.
+```{r}
+df <- 
+df %>% 
+  mutate(disc_number = ifelse(is.na(disc_number),
+                            mode(disc_number),
+                            disc_number))
+```
+
+We also see song names has null values. These rows where we don't have
+song name details cannot be replaced by any other qualitative data. 
+Hence removing all rows that contain NA
+
+```{r}
+df <- na.omit(df)
+distinct(df)
+```
+```{r}
+df %>% summarise(across(everything(), ~ sum(is.na(.))))
+```
+Finally we have no NA values in our dataframe
+
+
+
+Having a look at column Sub genre and Main Genre
+```{r}
+unique(df$genre)
+```
+We notice that there are some unnecessary character's in genre name
+like [,',]
+So removing them
+```{r}
+# to remove "['" in genre column at the front
+df$sub_genre <- str_remove(df$sub_genre, pattern = "^\\[\\'")
+# to remove "]" in genre column at the back
+df$sub_genre  <- gsub("]","",as.character(df$sub_genre))
+
+# to remove "['" in genre column at the front
+df$main_genre <- str_remove(df$main_genre, pattern = "^\\[\\'")
+# to remove "]" in genre column at the back
+df$main_genre  <- gsub("]","",as.character(df$main_genre))
+```
+Once we have removed the extra characters, the sub_genre and main_genre column is clean. 
+```{r}
+unique(df$sub_genre)
+unique(df$main_genre)
+```
+
+
+Checking for Outliers. 
+Now let's have a look at the summary of our dataframe
+```{r}
+summary(df)
+```
+From summary, we can notice that max of acousticness is very high
+let's try to understand this distribution better using box plot
+
+```{r}
+boxplot(df$acousticness)
+```
+
+Finding the rows where Acousticness is greater than 1
+```{r}
+subset(df, acousticness >= 1)%>%
+  select(acousticness,everything())
+```
+As we know that acousticness can't be greater than 1, the values might be due to incorrect data we can divide the acousticness by 1000 and get values between 0 and 1
+
+```{r}
+df <- 
+df %>% 
+  mutate(acousticness = ifelse(acousticness>1,
+                            acousticness/1000,
+                            acousticness))
+```
+
+To verify the above operation.
+```{r}
+subset(df, acousticness >= 1)%>%
+  select(acousticness,everything())
+```
+
+```{r}
+summary(df)
+```
+Now Max of acousticness is below 1
+```{r}
+boxplot(df$acousticness)
+```
+
+
+From summary, we can also notice that max of liveness is very high
+let's try to understand this distribution better using box plot
+
+```{r}
+boxplot(df$liveness)
+```
+We can see that Liveliness for few values are greater than 1. To fix these outliers, 
+we are replacing it with mean.
+
+Finding the rows where Acousticness is greater than 1
+```{r}
+subset(df, liveness >= 1)%>%
+  select(liveness,everything())
+```
+
+
+
+```{r}
+df <- 
+df %>% 
+    mutate(liveness = ifelse(liveness>1,
+                             liveness/100,
+                             liveness))
+```
+Plotting the box plot to verify the distribution.
+```{r}
+boxplot(df$liveness)
+```
+
+We see that there are still outliers. We are replacing it with the mean.
+```{r}
+df <- df %>% 
+    mutate(liveness = ifelse(liveness>IQR(df$liveness) * 1.5,
+                             mean(liveness), # liveness/100,
+                             liveness))
+```
+
+Plotting the box plot to verify the distribution.
+```{r}
+boxplot(df$liveness)
+```
+
+For verifying the changes.
+```{r}
+subset(df, liveness >= 1)%>%
+  select(liveness,everything())
+```
+
+
+Checking the summary to confirm the data for all columns.
+```{r}
+summary(df)
+```
+
+
+Saving the dataset to csv format.
+```{r}
+write.csv(df,"D:/MS_in_DS/Stats_1/Assignments/Assignment_1/Nikhil_BM_Stats_Assignment1/Stats_Assignment_1_Cleaned.csv",
+         row.names = FALSE)
+```

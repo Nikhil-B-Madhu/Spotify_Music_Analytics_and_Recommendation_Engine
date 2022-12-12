@@ -1,0 +1,125 @@
+---
+title: "Spotify Project Clusterning"
+author: "Prasenjeet Madhav Gadhe"
+date: "2022-12-03"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(tidyverse)
+library(dplyr)
+library(ggplot2)
+library(plotly)
+library(corrplot)
+library(factoextra)
+library(plyr)
+library(RColorBrewer)
+library(funModeling)
+library(knitr)
+library(DataExplorer)
+```
+
+# Reading the clean Data
+```{r}
+df <- read.csv("C:/Users/jeetp/Desktop/Project/00.Spotify_Project/Stats_Assignment_1_Cleaned_2.csv")
+head(df,2)
+```
+# Generating the Report
+```{r}
+DataExplorer::create_report(df)
+```
+
+# Converting genres into numeric value
+```{r}
+genr <- factor(df$main_genre)
+df$genr_new <- unclass(genr)                         # Convert categories to numeric
+df$genr_new  
+#head(df,2)
+```
+## Model Building 
+# Data Clustering
+# We will be using specific attributes for clustering, scaling those attributes
+```{r}
+spotify_clu <- scale(df[,c(11,12,13,14,16,17,18,19,20,21,22)])
+spotify_scaled <- cbind(spotify_clu, df$genr_new)
+
+summary(spotify_scaled)
+```
+
+# Trying to find the optimal number of clusters using Elbow method
+
+You can also embed plots, for example:
+
+```{r}
+wss <- function(data, maxCluster = 12) {
+  SSw <- (nrow(data) - 1) * sum(apply(data, 2, var))
+  SSw <- vector()
+  for (i in 2:maxCluster) {
+    SSw[i] <- sum(kmeans(data, centers = i)$withinss)
+  }
+  plot(1:maxCluster, SSw, type = "o", xlab = "Number of Clusters", ylab = "Within groups sum of squares", pch=19)
+}
+
+wss(spotify_scaled)
+```
+
+# In the plot as we can see at k =9 it appears to be the threshold point however, we can not se the abrupt point.
+
+
+##K-mean Clustering
+```{r}
+spotify_kmeans <- kmeans(spotify_scaled, centers = 4)
+spotify_kmeans$size
+```
+
+```{r}
+spotify_kmeans$centers
+```
+
+```{r}
+df$cluster <- spotify_kmeans$cluster
+tail(df)
+```
+```{r}
+fviz_cluster(spotify_kmeans, data=spotify_scaled)
+```
+```{r}
+spotify_kmeans$tot.withinss
+```
+
+```{r}
+spotify_kmeans$totss
+```
+```{r}
+spotify_kmeans$betweenss
+```
+```{r}
+((spotify_kmeans$betweenss)/(spotify_kmeans$totss))*100
+```
+
+```{r}
+df %>% 
+  group_by(cluster) %>% 
+  summarise_all(mean) %>% 
+  select(cluster, acousticness, danceability, energy, instrumentalness, speechiness, valence, liveness)
+```
+
+
+# Input Song Name and Artist Name
+```{r}
+df %>% 
+  filter(song_name == "Stay", artist == "Hungry Lucy")
+clust <- df$cluster[df$song_name == "Stay" & df$artist =="Hungry Lucy"]
+clust
+```
+
+# Input for Recommended genre and Clusrter
+```{r}
+df %>% 
+  filter(cluster == clust) %>% 
+  sample_n(5)
+```

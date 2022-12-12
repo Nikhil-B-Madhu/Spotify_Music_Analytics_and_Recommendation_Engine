@@ -1,0 +1,369 @@
+---
+title: "Project Assignment 2"
+author: "Nikhil BM"
+date: "2022-09-02"
+output:
+  pdf_document: default
+  word_document: default
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(warning = FALSE, message = FALSE) 
+```
+
+
+```{r}
+#Libraries used
+library(tidyverse)
+library(janitor)
+library(dplyr)
+library(readr)
+library(ggplot2)
+```
+
+Reading the data from .csv file
+```{r}
+df <- read_csv("Stats_Assignment_1_Cleaned.csv")
+```
+
+1) Use R to calculate the mean, medium, mode, range, variance, stddev, quartiles, and IQR. 
+
+Quantitative Variables chosen for analysis are :
+ 1. danceability 
+ 2. energy
+ 3. loudness 
+ 4. speechiness 
+ 5. acousticness 
+ 6. instrumentalness 
+ 7. valence 
+ 8. duration_ms
+Part 1: Description of each variable
+If the mean is much larger than the median, the data are generally skewed right; a few values are larger than the rest. If the mean is much smaller than the median, the data are generally skewed left; a few smaller values bring the mean down. If the mean and median are close, you know the data is fairly balanced, or symmetric, on each side (but not necessarily bell-shaped).
+
+```{r question-1 response, echo=FALSE}
+my_mode <- function(x) {  # Create mode function 
+  unique_x <- unique(x)
+  tabulate_x <- tabulate(match(x, unique_x))
+  unique_x[tabulate_x == max(tabulate_x)]
+}
+
+
+sapply(df[ , purrr::map_lgl(df, is.numeric)], function(x) c( "Stand dev" = sd(x), 
+                         "Mean"= mean(x,na.rm=TRUE),
+                         "Mode" = my_mode(x),
+                         "Median" = median(x),
+                         "Variance" = var(x),
+                         "Standard Deviation"= sd(x),
+                         "Minimum" = min(x),
+                         "Maximun" = max(x),
+                         "Range" = max(x)-min(x),
+                         "Upper Quantile" = quantile(x,1),
+                         "LowerQuartile" = quantile(x,0),
+                         "1st Quartile" = quantile(x,0.25),
+                         "2st Quartile" = quantile(x,0.50),
+                         "3st Quartile" = quantile(x,0.75),
+                         "IQR" = IQR(x)
+                         
+)
+)
+
+```
+
+2) Create a set histograms for each variable using at three or more bin sizes. Discuss how the histogram confirms your measures in (1). 
+
+This can be seen by the plots below. For example: 
+1. Danceability is skewed towards right a little so we can expect mean to be a little greater than median and from the data calculated in part 1, mean = 6.32 and median = 5. Which confirms the findings. Interestingly, there is a spike in frequency of danceable songs around danceability = 0.75, which only becomes apparent when the number of bins is increased. At lower bin counts there appears to be a plateau between 0.6 and 0.75, and the spike is hidden.
+2. Energy shows a skew at all 3 bin counts, which is not as readily apparent from the numeric analysis done previously.
+3. Loudness skews strongly left, which the numbers above suggest. But the lower bin count (7) and upper bin count (30) both show a more gradual tapering towards 0 than the middle bin count (15).
+4. The numeric analysis of speechiness suggests a right-skewed distribution, because the median is lower than the mean and mode by almost half. This skew is readily apparent in all 3 versions of the histogram.
+5. Acousticness, like speechiness, has a median around half its mean & mode, so we expect the data to be right-skewed, but due to high variance more spread out when graphed. This is the case.
+6. Instrumentelness is skewed towards left a lot so we can expect mean to be a lot greater than median and from the data calculated in part 1, mean = 0.0780404 and median = 0.00000374. Which confirms the findings. 
+7. Valence looks symmetrically distributed so we can expect mean to be similar median and from the data calculated in part 1, mean = 0.4751 and median = 0.464. Which confirms the findings.
+8. From the huge variance in duration (8.455e+09) I would not have expected such a strongly right-skewed graph. Zoomed in there might be just a sliver of a bar around 3.6e06, but it's only one pixel tall, and there's nothing between that possibly-single data point and the rest of the distribution.
+
+```{r question-2-response, echo=FALSE,  results='hide'}
+plist<-list()
+for(i in c(7,15 ,30 )){
+ 
+  (plist[[i]]<- ggplot(df, aes(danceability))+
+    geom_histogram(bins=i))+labs(title = 'danceability')+ggtitle("histogram for danceability")
+}
+ (figure <- ggarrange(plist[[7]], plist[[15]], 
+plist[[30]],labels = c("Histogram for danceability(7 Bins)", "Histogram for danceability(15 Bins)", "Histogram for danceability(30 Bins)"),font.label = list(size = 5), ncol =2, nrow =2 ))
+
+plist<-list()
+for(i in c(7,15 ,30 )){
+ 
+  (plist[[i]]<- ggplot(df, aes(energy))+
+    geom_histogram(bins=i))+labs(title = 'energy')
+}
+ (figure <- ggarrange(plist[[7]], plist[[15]], 
+plist[[30]],labels = c("Histogram for energy(7 Bins)", "Histogram for energy(15 Bins)", "Histogram for energy(30 Bins)"),font.label = list(size = 5), ncol =2, nrow =2 ))
+for(i in c(7,15 ,30 )){
+ 
+  (plist[[i]]<- ggplot(df, aes(loudness))+
+    geom_histogram(bins=i))+labs(title = 'loudness')
+}
+(figure <- ggarrange(plist[[7]], plist[[15]], 
+plist[[30]],labels = c("Histogram for loudness(7 Bins)", "Histogram for loudness(15 Bins)", "Histogram for loudness(30 Bins)"),font.label = list(size = 5), ncol =2, nrow =2 ))
+
+plist<-list()
+for(i in c(7,15 ,30 )){
+ 
+  (plist[[i]]<- ggplot(df, aes(acousticness))+
+    geom_histogram(bins=i))+labs(title = 'acousticness')
+}
+(figure <- ggarrange(plist[[7]], plist[[15]], 
+plist[[30]],labels = c("Histogram for acousticness(7 Bins)", "Histogram for acousticness(15 Bins)", "Histogram for acousticness(30 Bins)"),font.label = list(size = 5), ncol =2, nrow =2 ))
+
+plist<-list()
+for(i in c(7,15 ,30 )){
+ 
+  (plist[[i]]<- ggplot(df, aes(instrumentalness))+
+    geom_histogram(bins=i))+labs(title = 'instrumentalness')
+}
+(figure <- ggarrange(plist[[7]], plist[[15]], 
+plist[[30]],labels = c("Histogram for instrumentalness(7 Bins)", "Histogram for instrumentalness(15 Bins)", "Histogram for instrumentalness(30 Bins)"),font.label = list(size = 5), ncol =2, nrow =2 ))
+plist<-list()
+for(i in c(7,15 ,30 )){
+ 
+  (plist[[i]]<- ggplot(df, aes(valence))+
+    geom_histogram(bins=i))+labs(title = 'valence')
+}
+(figure <- ggarrange(plist[[7]], plist[[15]],plist[[30]],labels = c("Histogram for valence (7 Bins)", "Histogram for valence(15 Bins)", "Histogram for valence(30 Bins)"),font.label = list(size = 5), ncol =2, nrow =2 ))
+
+
+plist<-list()
+for(i in c(7,15 ,30 )){
+ 
+  (plist[[i]]<- ggplot(df, aes(speechiness),main="histogram for speechiness")+
+    geom_histogram(bins=i))+labs(title = 'hspeechiness')
+}
+(figure <- ggarrange(plist[[7]], plist[[15]], 
+plist[[30]],labels = c("Histogram for speechiness(7 Bins)", "Histogram for speechiness(15 Bins)", "Histogram for speechiness(30 Bins)"),font.label = list(size = 5), ncol =2, nrow =2 ))
+
+plist<-list()
+for(i in c(7,15 ,30 )){
+ 
+  (plist[[i]]<- ggplot(df, aes(duration_ms))+
+    geom_histogram(bins=i))+labs(title = 'histogram for duration_ms')
+
+}
+(figure <- ggarrange(plist[[7]], plist[[15]], 
+plist[[30]],labels = c("Histogram for duration_ms(7 Bins)", "Histogram for duration_ms(15 Bins)", "Histogram for duration_ms(30 Bins)"),font.label = list(size = 5), ncol =2, nrow =2 ))
+
+```
+
+3) Create boxplots (or violin plots) to visualize each variable. Be sure that the min, max, median, Q1, and Q3 are labeled. Do you see any outliers?
+
+For the Danceability, there are outliers outside Q1-1.5 IQR range. The boxplot of energy follows similar pattern as well. Coming to Acousticness, It has no outliers meaning that all the points are withing the IQR range. Loudness has an outlier at -60, which is basically silent, which is strange for music to be--might be an error on Spotify's classifaction's part. Instrumentalness has many outliers. Valence attribute has no outliers as well. Speechiness has a lot of outliers outside the Q3+1.5 IQR range. Duration has some outliers, including the most incredible outlier that sits way, way beyond the IQR and more than double the next highest datapoint.
+
+```{r question-3-response, echo=FALSE,  results='hide'}
+par(mar = c(2, 2, 2, 2))
+
+par(mfrow=c(3,2))
+boxplot(df$danceability,horizontal=TRUE, main="Boxplot of Danceability")
+text(x=fivenum(df$danceability),labels=fivenum(df$danceability),y=3.25)
+
+boxplot(df$energy,horizontal=TRUE, main = "Boxplot of Energy")
+text(x=fivenum(df$energy),labels=fivenum(df$energy),y=3.25)
+
+boxplot(df$loudness,horizontal=TRUE, main = "Boxplot of Loudness")
+text(x=fivenum(df$loudness),labels=fivenum(df$loudness),y=3.25)
+
+boxplot(df$acousticness,horizontal=TRUE, main = "Boxplot of Acousticness")
+text(x=fivenum(df$acousticness),labels=fivenum(df$acousticness),y=3.25)
+
+boxplot(df$instrumentalness,horizontal=TRUE, main = "Boxplot of instrumentalness")
+text(x=fivenum(df$instrumentalness),labels=fivenum(df$instrumentalness),y=3.25)
+
+boxplot(df$valence,horizontal=TRUE,main = "Boxplot of Valence")
+text(x=fivenum(df$valence),labels=fivenum(df$valence),y=3.25)
+
+boxplot(df$speechiness,horizontal=TRUE, main ="Boxplot of Speechiness")
+text(x=fivenum(df$speechiness),labels=fivenum(df$speechiness),y=3.25)
+
+boxplot(df$duration_ms,horizontal=TRUE, main ="Boxplot of Duration (ms)")
+text(x=fivenum(df$duration_ms),labels=fivenum(df$duration_ms),y=3.25)
+
+```
+
+4) Use two different kernel density functions (and create the R plot) to estimate the shape (distribution) of the data. Explain what you have found and how the two kernel function results compare. Discuss what is revealed about each variable. 
+
+a. For the quantitative variable Danceability, its clear from the guassian and rectangular kernel distribution that its a well balanced distribution. Danceability describes how suitable a track is for dancing based on a combination of musical elements including tempo, rhythm stability, beat strength, and overall regularity. Since the distribution is more shifting towards 1, so the songs are more danceable. 
+
+```{r question-4-response, echo=FALSE,  results='hide'}
+# Kernel density estimation
+d <- density(df$danceability,
+             kernel = "rectangular") 
+# Kernel density plot
+plot(d, lwd = 2, main = "Rectangular kernel Distribution", xlab="Distribution of 'danceability' ")
+
+# Kernel density estimation
+d <- density(df$danceability,
+             kernel = "gaussian") 
+ 
+# Kernel density plot
+plot(d, lwd = 2, main = "Gaussian kernel Distribution", xlab="Distribution of 'danceability'")
+```
+
+b. For the quantitative variable Energy, its clear from the guassian and rectangular kernel distribution that its a well balanced distribution. Energy is a measure from 0.0 to 1.0 and represents a perceptual measure of intensity and activity. Typically, energetic tracks feel fast, loud, and noisy. For example, death metal has high energy, while a Bach prelude scores low on the scale. Since the distribution is more shifting towards 1, so the songs in our sample dataset have more energy.
+
+
+```{r}
+# Kernel density estimation
+d <- density(df$energy,
+             kernel = "rectangular") 
+# Kernel density plot
+plot(d, lwd = 2, main = "Rectangular kernel Distribution", xlab="Distribution of 'Energy'")
+
+# Kernel density estimation
+d <- density(df$energy,
+             kernel = "gaussian") 
+ 
+# Kernel density plot
+plot(d, lwd = 2, main = "Gaussian kernel Distribution", xlab="Distribution of 'Energy'")
+```
+
+c. For the quantitative variable acousticness, its clear from the guassian and rectangular kernel distribution that its a well balanced distribution. A confidence measure from 0.0 to 1.0 of whether the track is acoustic. 1.0 represents high confidence the track is acoustic. Since the distribution is skewed towards 0, the songs in our sample dataset are less accoustic in nature. 
+
+```{r}
+# Kernel density estimation
+d <- density(df$acousticness,
+             kernel = "rectangular") 
+# Kernel density plot
+plot(d, lwd = 2, main = "Rectangular kernel Distribution", xlab= "Distribution of 'acousticness' ")
+
+# Kernel density estimation
+d <- density(df$acousticness,
+             kernel = "gaussian") 
+ 
+# Kernel density plot
+plot(d, lwd = 2, main = "Gaussian kernel Distribution", xlab="Distribution of 'acousticness' ")
+```
+
+
+d. For the quantitative variable valence, its clear from the guassian and rectangular kernel distribution that its a well balanced distribution. 
+A measure from 0.0 to 1.0 describing the musical positiveness conveyed by a track. Tracks with high valence sound more positive (e.g. happy, cheerful, euphoric), while tracks with low valence sound more negative (e.g. sad, depressed, angry). From the distribution, we can infer that the sample dataset has a mix of both sad and happy songs. 
+
+
+```{r}
+# Kernel density estimation
+d <- density(df$valence,
+             kernel = "rectangular") 
+# Kernel density plot
+plot(d, lwd = 2, main = "Rectangular kernel Distribution", xlab= "Distribution of 'valence' ")
+
+# Kernel density estimation
+d <- density(df$valence,
+             kernel = "gaussian") 
+ 
+# Kernel density plot
+plot(d, lwd = 2, main = "Gaussian kernel Distribution", xlab="Distribution of 'valence' ")
+```
+
+e. Below is the distribution for quantitative variable speechiness.Speechiness detects the presence of spoken words in a track. The more exclusively speech-like the recording (e.g. talk show, audio book, poetry), the closer to 1.0 the attribute value. Values above 0.66 describe tracks that are probably made entirely of spoken words. Values between 0.33 and 0.66 describe tracks that may contain both music and speech, either in sections or layered, including such cases as rap music. Values below 0.33 most likely represent music and other non-speech-like tracks. From the distribution, we can infer that the sample dataset has more of instrumental music and has less speech like tracks. This is also confirmed with the box plot.
+
+```{r}
+# Kernel density estimation
+d <- density(df$speechiness,
+             kernel = "rectangular") 
+# Kernel density plot
+plot(d, lwd = 2, main = "Rectangular kernel Distribution", xlab= "Distribution of 'speechiness' ")
+
+# Kernel density estimation
+d <- density(df$speechiness,
+             kernel = "gaussian") 
+ 
+# Kernel density plot
+plot(d, lwd = 2, main = "Gaussian kernel Distribution", xlab="Distribution of 'speechiness' ")
+```
+
+f. Below is the distribution for quantitative variable loudness. The overall loudness of a track in decibels (dB). Loudness values are averaged across the entire track and are useful for comparing relative loudness of tracks. Loudness is the quality of a sound that is the primary psychological correlate of physical strength (amplitude). Values typically range between -60 and 0 db.
+From the distribution, we can infer that the sample dataset has loudness ranging from -14db to 0db. This is because, no extra distortion is introduced in the transcoding process. Also, Spotify usually compresses the loudness to -20 to 0db range.
+
+```{r}
+# Kernel density estimation
+d <- density(df$loudness,
+             kernel = "rectangular") 
+# Kernel density plot
+plot(d, lwd = 2, main = "Rectangular kernel Distribution", xlab= "Distribution of 'loudness' measured in db. ")
+
+# Kernel density estimation
+d <- density(df$loudness,
+             kernel = "gaussian") 
+ 
+# Kernel density plot
+plot(d, lwd = 2, main = "Gaussian kernel Distribution", xlab="Distribution of 'loudness' measured in db. ")
+```
+
+
+g. Below is the distribution for quantitative variable liveness. Detects the presence of an audience in the recording. Higher liveness values represent an increased probability that the track was performed live. A value above 0.8 provides strong likelihood that the track is live.
+From the distribution, we can infer that the sample dataset has liveness with 2 maximas.
+
+```{r}
+# Kernel density estimation
+d <- density(df$liveness,
+             kernel = "rectangular") 
+# Kernel density plot
+plot(d, lwd = 2, main = "Rectangular kernel Distribution", xlab= "Distribution of 'liveness' ")
+
+# Kernel density estimation
+d <- density(df$liveness,
+             kernel = "gaussian") 
+ 
+# Kernel density plot
+plot(d, lwd = 2, main = "Gaussian kernel Distribution", xlab="Distribution of 'liveness' ")
+```
+
+
+
+##############
+5th questions
+
+```{r}
+qqnorm(df$danceability, pch = 1, frame = FALSE)
+qqline(df$danceability, col = "steelblue", lwd = 2)
+```
+For the quantitative variable Danceability, from qq plot it can be observed that it is very close to normal distribution which was earlier observed by histogram.
+
+```{r}
+qqnorm(df$energy, pch = 1, frame = FALSE)
+qqline(df$energy, col = "steelblue", lwd = 2)
+```
+For the quantitative variable Energy, from qq plot it can be observed that it is very close to normal distribution also as it exhibits growing departure from the fitted line above the line in the first few points and rising departure from the fitted line below the line in the last few points it is slightly short tailed.
+
+```{r}
+qqnorm(df$acousticness, pch = 1, frame = FALSE)
+qqline(df$acousticness, col = "steelblue", lwd = 2)
+```
+For the variable Acousticness, from qq plot it can be observed that it is right skewed also known as positive skew, in this distribution majority of values are concentrated in the left tail, but the right tail is longer.
+
+```{r}
+qqnorm(df$valence, pch = 1, frame = FALSE)
+qqline(df$valence, col = "steelblue", lwd = 2)
+```
+For the quantitative variable Valence, from qq plot it can be observed that it is very close to normal distribution also as it exhibits growing departure from the fitted line above the line in the first few points and rising departure from the fitted line below the line in the last few points it is slightly short tailed.
+```{r}
+qqnorm(df$speechiness, pch = 1, frame = FALSE)
+qqline(df$speechiness, col = "steelblue", lwd = 2)
+```
+
+For the variable Speechiness , from qq plot it can be observed that it is right skewed also known as positive skew, in this distribution majority of values are concentrated in the left tail, but the right tail is longer.
+```{r}
+qqnorm(df$loudness, pch = 1, frame = FALSE)
+qqline(df$loudness, col = "steelblue", lwd = 2)
+```
+
+For the variable Loudness , from qq plot it can be observed that it is left skewed also known as negative skew, in this distribution majority of values are concentrated in the right tail, but the left tail is longer.
+
+```{r}
+qqnorm(df$liveness, pch = 1, frame = FALSE)
+qqline(df$liveness, col = "steelblue", lwd = 2)
+```
+
+For the variable Liveness from qq plot it can be observed that the shape of the plot is consistent with a left-skew, possibly bimodal distribution (with a small mode on the right)
+
+Some of these plots show that some of the variables are normally or almost normally distributed: liveness, speechiness, acousticness, and energy all fall fairly close to the fit-line. But the other variables (valence, but especially loudness and liveness) have strange shapes that rarely come near the diagonal fit-line, which strongly suggests these song-features are not normally distributed at all.

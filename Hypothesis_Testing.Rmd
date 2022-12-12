@@ -1,0 +1,159 @@
+---
+title: "Untitled"
+author: "Annanya Jain"
+date: "2022-11-25"
+output: word_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+```{r}
+library(tidyverse)
+library(knitr)
+library(janitor)
+library(dplyr)
+library(readr)
+library(ggplot2)
+library(BSDA)
+```
+
+```{r}
+df <- read_csv("D:/MS_in_DS/Stats_1/Assignments/Assignment_1/Nikhil_Madhu_Belavinakodige_Stats_Assignment_1/Stats_Assignment_1_Cleaned.csv")
+```
+```{r}
+kable(head(df))
+```
+
+SPLITTING DATA
+```{r}
+set.seed(123)
+train_idx <- sample(nrow(df), .80*nrow(df))
+
+model_train <- df[train_idx,]
+model_test <- df[-train_idx,]
+```
+
+
+1. T TEST
+
+In statistics, we use Welch’s T-test, which is a two-sample location test. We use it to test the hypothesis such that the two populations have equal means. Welch’s test, which is an adaptation of Student’s T-test is much more robust than the latter. It is more reliable when the two samples have unequal variances and unequal sample sizes.
+
+Student's t-test assumes that the sample means being compared for two populations are normally distributed, and that the populations have equal variances. Welch's t-test is designed for unequal population variances, but the assumption of normality is maintained.
+
+1a. Differences in tempo between songs in major and minor keys:
+Test if there is a difference in the distribution of tempo between songs in a major key and songs in a minor keys. 
+Lets look at the distribution of "Tempo" to get a better understanding. 
+```{r}
+df <- df %>% mutate(mode = fct_recode(as.factor(df$mode),  "Major" =  "1", "Minor" = "0"))
+```
+
+```{r}
+#df$mode
+#mode = fct_recode(df$mode, "1" = "Major" ,"0" = "Minor")
+ggplot(data = df, mapping = aes(x = tempo)) +
+    geom_histogram(aes(fill = mode)) +
+    facet_wrap(~ mode)
+```
+```{r}
+ggplot(data = df, mapping = aes(x = tempo)) +
+    geom_density(aes(col = mode))
+```
+Since the distribution looks very alike. We are computing the mean for the modes. 
+```{r}
+df %>% group_by(mode) %>%
+    summarize(mean_tempo = mean(tempo))
+```
+
+```{r}
+major_data <- (df %>% filter(mode == "Major"))$tempo
+minor_data <- (df %>% filter(mode == "Minor"))$tempo
+t.test(major_data, minor_data, alternative = "two.sided")
+```
+
+The p-value for this test is around 0.20, so we wouldn’t reject the null hypothesis in favor of the alternative hypothesis. In order to further analyse, we test if the distribution of tempo for songs in major key is significantly different from the distribution of tempo for songs in minor key with the Kolmogorov-Smirnov test. 
+
+```{r}
+ks.test(major_data, minor_data, alternative = "two.sided")
+```
+We see that the p-value is 0.11, which is still greater than the alpha, so we cannot reject the Null Hypothesis(Ho). 
+
+
+2. SIMPLE STUDENTS T TEST
+Ho = Acousticness decreased over the years.
+Ha = Acousticness varied significantly over the years.
+
+```{r}
+mean(df$acousticness)
+```
+
+```{r}
+t.test(model_test$acousticness, mu = mean(df$acousticness))
+```
+As we see from the results, the observed T-score is 0.11 and P-value is 0.91. Since the observed T-score is below the critical value and also, the P-value is greater than 0.05 so we can not reject the null hypothesis. So Acousticness did not decreased over the years. 
+
+
+
+3. Z - TEST
+What is a Z-Test?
+When the variances are known and the sample size is large, a z-test is a statistical test that is used to assess whether two population means differ from one another. In order to execute a precise z-test, the test statistic is expected to have a normal distribution, and nuisance variables like standard deviation should be known.
+
+
+3a. 
+Null Hypothesis: 'White Christmas was the most popular song"
+Alternate Hypothesis : "White Christmas was not the most popular song"
+
+```{r}
+data <-  (df%>% filter(song_name=='White Christmas'))$rating_percent
+z.test(data, mu = mean(df$rating_percent), sigma.x= sd(df$rating_percent))
+```
+As we see from the results, the observed Z-score is 1.3054 and P-value is 0.1917. Since the observed Z-score is below the critical value and also, the P-value is greater than 0.05 so we can not reject the null hypothesis. So we can conclude that the white Christmas is indeed the most popular.
+
+
+3b.
+Ho: Rock music has more loudness
+Ha: Rock music doesn't more loudness
+
+```{r}
+data2 <-  (df%>% filter(main_genre=='rock'))$loudness
+z.test(data2, mu = mean(df$loudness), sigma.x= sd(df$loudness))
+```
+As we see from the results, the observed Z-score is -1.6394 and P-value is 0.1011. Since the observed Z-score is below the critical value and also, the P-value is greater than 0.05 so we can not reject the null hypothesis. So we can conclude that the rock genre is indeed the more louder. 
+
+
+3c.
+Ho: Classical music has more loudness
+Ha: Classical music doesn't has more loudness
+```{r}
+data3 <-  (df%>% filter(main_genre=="classical"))$loudness
+z.test(data3, mu = mean(df$loudness), sigma.x= sd(df$loudness))
+```
+As we see from the results, the observed Z-score is -6.5618 and P-value is 5.315e-11. Since the observed Z-score is above the critical value and also, the P-value is very less than 0.05 so we can reject the null hypothesis. So we can conclude that the classical musics are not very loud.
+
+
+
+4. ANOVA
+
+Spotify has some of everything, from the centuries old classical pieces to the latest experiments from a band in some garage in Seattle. Are some genres less well liked than others?
+
+_H~o~:_ The ratings of songs are the same regardless of the songs' genre on Spotify.
+_H~a~:_ The ratings of songs will be high or low depending on whether they are from a popular genre.
+_alpha_ = 0.05
+
+```{r genre ratings ANOVA}
+ANOVA1 <- aov(rating_percent~main_genre, data = df)
+summary(ANOVA1)
+```
+Since P-Value is greater than 0.05, We can't reject the null hypothesis based on this. 
+
+```{r genre ratings TukeyHSD}
+TukeyHSD(ANOVA1, conf.level = .95)
+```
+A post-hoc test upholds the results of the ANOVA. Zero falls within the realm of the confidence interval for every comparison test, so the null hypothesis stands.
+
+```{r genre rating Tukey plot}
+par(mar=c(5, 7.1, 3.1, 2.1))
+plot(TukeyHSD(ANOVA1, conf.level = .95), las = 1)
+par(mar=c(5, 4, 4, 2) + 0.1) # reset margins to default to not mess with following plots
+
+```
